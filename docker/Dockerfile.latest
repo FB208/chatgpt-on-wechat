@@ -2,34 +2,40 @@ FROM python:3.10-slim-bullseye
 
 LABEL maintainer="foo@bar.com"
 ARG TZ='Asia/Shanghai'
-
-ARG CHATGPT_ON_WECHAT_VER
-
-RUN echo /etc/apt/sources.list
-# RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 ENV BUILD_PREFIX=/app
 
-ADD . ${BUILD_PREFIX}
+# 设置时区
+ENV TZ=${TZ}
 
+# 更新系统并安装依赖
 RUN apt-get update \
-    &&apt-get install -y --no-install-recommends bash ffmpeg espeak libavcodec-extra\
-    && cd ${BUILD_PREFIX} \
-    && cp config-template.json config.json \
-    && /usr/local/bin/python -m pip install --no-cache --upgrade pip \
-    && pip install --no-cache -r requirements.txt \
-    && pip install --no-cache -r requirements-optional.txt \
+    && apt-get install -y --no-install-recommends bash ffmpeg espeak libavcodec-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装Python依赖
+COPY requirements.txt requirements-optional.txt ${BUILD_PREFIX}/
+RUN /usr/local/bin/python -m pip install --no-cache --upgrade pip \
+    && pip install --no-cache -r ${BUILD_PREFIX}/requirements.txt \
+    && pip install --no-cache -r ${BUILD_PREFIX}/requirements-optional.txt \
     && pip install azure-cognitiveservices-speech
 
+# 添加应用代码
 WORKDIR ${BUILD_PREFIX}
+ADD . ${BUILD_PREFIX}
 
+# 设置配置文件
+RUN cp config-template.json config.json
+
+# 准备启动脚本
 ADD docker/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh \
+    && chmod +x /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh \
-    && mkdir -p /home/noroot \
+# 设置非 root 用户
+RUN mkdir -p /home/noroot \
     && groupadd -r noroot \
     && useradd -r -g noroot -s /bin/bash -d /home/noroot noroot \
     && chown -R noroot:noroot /home/noroot ${BUILD_PREFIX} /usr/local/lib
 
 USER noroot
-
 ENTRYPOINT ["/entrypoint.sh"]
