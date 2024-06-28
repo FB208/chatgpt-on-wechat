@@ -109,7 +109,7 @@ class WechatChannel(ChatChannel):
 
     def __init__(self):
         super().__init__()
-        self.receivedMsgs = ExpiredDict(60 * 60)
+        self.receivedMsgs = ExpiredDict(conf().get("expires_in_seconds"))
         self.auto_login_times = 0
 
     def startup(self):
@@ -132,7 +132,7 @@ class WechatChannel(ChatChannel):
             # start message listener
             itchat.run()
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
 
     def exitCallback(self):
         try:
@@ -233,6 +233,7 @@ class WechatChannel(ChatChannel):
             logger.info("[WX] sendImage url={}, receiver={}".format(img_url, receiver))
         elif reply.type == ReplyType.IMAGE:  # 从文件读取图片
             image_storage = reply.content
+            image_storage.seek(0)
             itchat.send_image(image_storage, toUserName=receiver)
             logger.info("[WX] sendImage, receiver={}".format(receiver))
         elif reply.type == ReplyType.FILE:  # 新增文件回复类型
