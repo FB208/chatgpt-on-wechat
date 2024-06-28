@@ -1,31 +1,45 @@
 FROM python:3.10-slim-bullseye
 
 LABEL maintainer="foo@bar.com"
-ARG TZ='Asia/Shanghai'
 
+ARG TZ='Asia/Shanghai'
 ARG CHATGPT_ON_WECHAT_VER
 
-RUN echo /etc/apt/sources.list
-# RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+# 设置语言环境
+ENV LANG zh_CN.UTF-8
+ENV LANGUAGE zh_CN:zh
+ENV LC_ALL zh_CN.UTF-8
+
+# 设置 Python 编码
+ENV PYTHONIOENCODING=utf-8
+
 ENV BUILD_PREFIX=/app
 
-ADD . ${BUILD_PREFIX}
+# 更新源并安装依赖
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends bash ffmpeg espeak libavcodec-extra \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update \
-    &&apt-get install -y --no-install-recommends bash ffmpeg espeak libavcodec-extra\
-    && cd ${BUILD_PREFIX} \
-    && cp config-template.json config.json \
-    && /usr/local/bin/python -m pip install --no-cache --upgrade pip \
-    && pip install --no-cache -r requirements.txt \
-    && pip install --no-cache -r requirements-optional.txt \
-    && pip install azure-cognitiveservices-speech
+# 复制依赖文件并安装 Python 包
+COPY requirements.txt ${BUILD_PREFIX}/
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r ${BUILD_PREFIX}/requirements.txt
+
+# 复制配置文件
+COPY config-template.json ${BUILD_PREFIX}/config.json
+
+# 复制项目文件
+COPY . ${BUILD_PREFIX}
 
 WORKDIR ${BUILD_PREFIX}
 
-ADD docker/entrypoint.sh /entrypoint.sh
+# 添加 entrypoint 脚本
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh \
-    && mkdir -p /home/noroot \
+# 创建非 root 用户
+RUN mkdir -p /home/noroot \
     && groupadd -r noroot \
     && useradd -r -g noroot -s /bin/bash -d /home/noroot noroot \
     && chown -R noroot:noroot /home/noroot ${BUILD_PREFIX} /usr/local/lib

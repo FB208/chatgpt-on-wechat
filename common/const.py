@@ -53,7 +53,7 @@ LINKAI_4o = "linkai-4o"
 
 
 MODEL_LIST = [
-              GPT35, GPT35_0125, GPT35_1106, "gpt-3.5-turbo-16k",
+              GPT35, GPT35_0125, GPT35_1106, "gpt-3.5-turbo-16k","7384973125022859301",
               GPT_4o, GPT4_TURBO, GPT4_TURBO_PREVIEW, GPT4_TURBO_01_25, GPT4_TURBO_11_06, GPT4, GPT4_32k, GPT4_06_13, GPT4_32k_06_13,
               WEN_XIN, WEN_XIN_4,
               XUNFEI, GEMINI, ZHIPU_AI, MOONSHOT,

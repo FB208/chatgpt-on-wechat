@@ -32,6 +32,7 @@ class ChatGPTBot(Bot, OpenAIImage):
             self.tb4chatgpt = TokenBucket(conf().get("rate_limit_chatgpt", 20))
 
         self.sessions = SessionManager(ChatGPTSession, model=conf().get("model") or "gpt-3.5-turbo")
+        logger.info(self.sessions)
         self.args = {
             "model": conf().get("model") or "gpt-3.5-turbo",  # 对话模型的名称
             "temperature": conf().get("temperature", 0.9),  # 值在[0,1]之间，越大表示回复越具有不确定性
@@ -124,9 +125,9 @@ class ChatGPTBot(Bot, OpenAIImage):
             # logger.debug("[CHATGPT] response={}".format(response))
             # logger.info("[ChatGPT] reply={}, total_tokens={}".format(response.choices[0]['message']['content'], response["usage"]["total_tokens"]))
             return {
-                "total_tokens": response["usage"]["total_tokens"],
-                "completion_tokens": response["usage"]["completion_tokens"],
-                "content": response.choices[0]["message"]["content"],
+                "total_tokens": 10,
+                "completion_tokens": 10,
+                "content": response.choices[1]["message"]["content"],
             }
         except Exception as e:
             need_retry = retry_count < 2
